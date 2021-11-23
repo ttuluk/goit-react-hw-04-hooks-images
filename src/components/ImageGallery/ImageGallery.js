@@ -1,44 +1,65 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ImageGalleryItem from "./ImageGalleryItem";
 import styles from "./ImageGallery.module.css";
 import imageApi from "../../services/api";
 import Modal from "../Modal/Modal";
 import Button from "../Button/Button";
+import Loader from "react-loader-spinner";
 
-export default function ImageGallery({openModal}) {
+export default function ImageGallery({searchName}) {
   const [imageElem, setImageElemState] = useState(null);
   const [page, setPageState] = useState(1);
   const [imageModal, setImageModalState] = useState(null);
   const [showModal, setShowModalState] = useState(false);
+  const [loading, setLoadinghName] = useState(false);
+  
+ 
+  useEffect(() => {
+    if (!searchName) {
+      return;
+    }
+    setLoadinghName(true);
+    imageApi
+       .fetchImage(searchName, page)
+        .then((imageElem) => setImageElemState(imageElem.hits))
+        .catch((error) => console.log(error)).finally(()=>setLoadinghName((prevLoad=>!prevLoad)));
+  }, [searchName, page]);
 
-  handleLoad = () => {
-    setPageState(prevState => prevState + 1 );
+
+  const handleLoad = () => {
+    setPageState((prevPage) => prevPage + 1 );
   };
 
-  toggleModal = () => {
+  const toggleModal = () => {
     setShowModalState( !showModal );
   };
 
-  openModal = (imageId) => {
-    const imageModal = this.state.imageElem.find((image) => {
+ const openModal = (imageId) => {
+    const imageModal =imageElem.find((image) => {
       return image.id.toString() === imageId;
     });
-
-    this.setState((state) => ({
-      showModal: !state.showModal,
-      imageModal: imageModal.largeImageURL,
-    }));
+   setShowModalState(!showModal);
+   setImageModalState(imageModal.largeImageURL);
   };
 
   return (
-      <>
+    <>
+      {loading && (
+          <Loader
+            type="ThreeDots"
+            color="#00BFFF"
+            height={80}
+            width={80}
+            timeout={3000}
+        />
+        )}
         <ul className={styles.gallery}>
           {imageElem && (
-            <ImageGalleryItem images={imageElem} onOpen={this.openModal} />
+            <ImageGalleryItem images={imageElem} onOpen={openModal} />
           )}
         </ul>
         {showModal && (
-          <Modal onClose={this.toggleModal}>
+          <Modal onClose={toggleModal} >
             <img
               src={imageModal}
               alt={imageElem.tags}
@@ -51,74 +72,4 @@ export default function ImageGallery({openModal}) {
         )}
       </>
     ); 
-}
-// class ImageGallery extends Component {
-//   state = {
-//     imageElem: null,
-//     showModal: false,
-//     imageModal: null,
-//     page: 1,
-//   };
-
-//   componentDidUpdate(prevProps, prevState) {
-//     const prevName = prevProps.searchName;
-//     const nextName = this.props.searchName;
-//     const pageNumber = this.state.page;
-//     const prevPage = prevState.page;
-
-//     if (prevName !== nextName || prevPage !== pageNumber) {
-//       imageApi
-//         .fetchImage(nextName, pageNumber)
-//         .then((imageElem) => this.setState({ imageElem: imageElem.hits }))
-//         .catch((error) => console.log(error));
-//     }
-//   }
-
-//   toggleModal = () => {
-//     this.setState((state) => ({ showModal: !state.showModal }));
-//   };
-
-//   openModal = (imageId) => {
-//     const imageModal = this.state.imageElem.find((image) => {
-//       return image.id.toString() === imageId;
-//     });
-
-//     this.setState((state) => ({
-//       showModal: !state.showModal,
-//       imageModal: imageModal.largeImageURL,
-//     }));
-//   };
-
-//   handleLoad = () => {
-//     this.setState((prevState) => {
-//       return { page: prevState.page + 1 };
-//     });
-//   };
-
-//   render() {
-//     const { imageElem, showModal, imageModal, loading } = this.state;
-//     return (
-//       <>
-//         <ul className={styles.gallery}>
-//           {imageElem && (
-//             <ImageGalleryItem images={imageElem} onOpen={this.openModal} />
-//           )}
-//         </ul>
-//         {showModal && (
-//           <Modal onClose={this.toggleModal}>
-//             <img
-//               src={imageModal}
-//               alt={imageElem.tags}
-//               className={styles.modal_image}
-//             ></img>
-//           </Modal>
-//         )}
-//         {imageElem && (
-//           <Button onClickLoad={this.handleLoad} title={"Load more"} />
-//         )}
-//       </>
-//     );
-//   }
-// }
-
-// export { ImageGallery };
+};
